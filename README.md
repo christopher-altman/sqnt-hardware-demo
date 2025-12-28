@@ -280,11 +280,32 @@ sqnt-hardware-demo/
 - [x] **Identifiability diagnostics** (support precision/recall/F1)
 - [x] **Topology confusion baselines**
 - [x] MNIST/CIFAR data loaders (numpy-only)
+- [x] **Hardware-aware topology constraints (Phase I)**
 
 ### v3 (Planned)
-- [ ] Hardware-aware topology constraints
 - [ ] Quantum circuit compilation targets
 - [ ] Integration with quantum simulation backends
+
+---
+
+## Hardware Constraints (Phase I)
+
+Phase I implements basic hardware-aware topology constraints for canonical topologies. This feature enables restricting the learned topology mixture to feasible subsets based on physical hardware limitations.
+
+**Purpose:** Constrain the hypothesis class to topologies that are realizable on target hardware (e.g., degree-limited chips, nearest-neighbor couplers).
+
+**Constraints supported:**
+- **Max degree:** Limits maximum node connectivity (e.g., `--max-degree 3`)
+- **Locality radius:** Restricts to short-range connections (e.g., `--locality-radius 2`)
+
+**Default behavior:** Constraints are **disabled** by default. When enabled, the recovery objective is augmented with a penalty term that encourages zero weight on infeasible topologies.
+
+**Usage:**
+```bash
+python scripts/run_all.py --enable-constraints --max-degree 3 --lambda-constraint 1.0
+```
+
+**Expected behavior:** Constraint-enabled runs will produce different learned mixture weights compared to baseline, as the optimizer shifts mass away from topologies that violate constraints.
 
 ---
 

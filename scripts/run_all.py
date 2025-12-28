@@ -11,6 +11,7 @@ All outputs are deterministic and reproducible (seed=0).
 """
 
 import sys
+import argparse
 from pathlib import Path
 
 # Ensure package and scripts are importable
@@ -18,11 +19,18 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 sys.path.insert(0, str(Path(__file__).parent))
 
 
-def run_recovery_experiments():
+def run_recovery_experiments(constraint_cfg=None):
     """Run the mixture recovery experiments and generate figures."""
     print("\n" + "=" * 60)
     print("SQNT Ground-Truth Mixture Recovery")
     print("=" * 60)
+
+    # Print constraint status if enabled
+    if constraint_cfg is not None and constraint_cfg.get("enabled", False):
+        print(f"\nConstraints: enabled={constraint_cfg['enabled']}, "
+              f"max_degree={constraint_cfg.get('max_degree', None)}, "
+              f"locality_radius={constraint_cfg.get('locality_radius', None)}, "
+              f"lambda={constraint_cfg.get('lambda_constraint', 0.0)}")
 
     import numpy as np
     from sqnt_hardware_demo.experiments import (
@@ -71,6 +79,7 @@ def run_recovery_experiments():
         lr_params=0.2,
         lr_mixture=0.15,
         seed=SEED,
+        constraint_cfg=constraint_cfg,
     )
 
     # Results
@@ -129,6 +138,52 @@ def run_figure_generation():
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        description="Run SQNT mixture recovery experiments with optional hardware constraints."
+    )
+    parser.add_argument(
+        "--enable-constraints",
+        action="store_true",
+        default=False,
+        help="Enable hardware topology constraints",
+    )
+    parser.add_argument(
+        "--max-degree",
+        type=int,
+        default=None,
+        help="Maximum node degree constraint (e.g., 3)",
+    )
+    parser.add_argument(
+        "--locality-radius",
+        type=int,
+        default=None,
+        help="Maximum hop distance for edges (e.g., 2)",
+    )
+    parser.add_argument(
+        "--lambda-constraint",
+        type=float,
+        default=0.0,
+        help="Constraint penalty strength (default: 0.0)",
+    )
+
+    args = parser.parse_args()
+
+    # Validate constraint configuration
+    if args.enable_constraints:
+        if args.max_degree is None and args.locality_radius is None:
+            print("ERROR: --enable-constraints requires at least one of --max-degree or --locality-radius")
+            sys.exit(1)
+
+    # Build constraint config
+    constraint_cfg = None
+    if args.enable_constraints:
+        constraint_cfg = {
+            "enabled": True,
+            "max_degree": args.max_degree,
+            "locality_radius": args.locality_radius,
+            "lambda_constraint": args.lambda_constraint,
+        }
+
     print("=" * 60)
     print("SQNT Hardware Demo - Full Run")
     print("=" * 60)
@@ -136,7 +191,7 @@ def main():
     print("All outputs are deterministic (seed=0).")
 
     # Run experiments
-    results = run_recovery_experiments()
+    results = run_recovery_experiments(constraint_cfg=constraint_cfg)
 
     # Generate figures
     run_figure_generation()

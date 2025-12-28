@@ -11,6 +11,7 @@ from typing import List, Dict, Tuple, Optional
 from .graphs import make_graph_mask
 from .sqnt_layer import SQNTLayer, sigmoid
 from .mixture import TopologyMixture, softmax, compute_dL_dM
+from .constraints import constraint_penalty, constraint_penalty_grad
 
 
 def sample_ground_truth_mixture(K: int, seed: int = 0, concentration: float = 1.0) -> np.ndarray:
@@ -137,6 +138,7 @@ def train_mixture_recovery(
     lambda_entropy: float = 0.0,
     lambda_dirichlet: float = 0.0,
     alpha_dirichlet: float = 0.3,
+    constraint_cfg: Optional[Dict] = None,
 ) -> Dict:
     """
     Train to recover a planted mixture and track convergence.
@@ -176,6 +178,12 @@ def train_mixture_recovery(
     alpha_dirichlet : float
         Dirichlet concentration parameter. Values < 1 encourage sparsity.
         Default 0.3 is a reasonable sparse prior.
+    constraint_cfg : dict, optional
+        Hardware constraint configuration. If provided, must contain:
+        - 'enabled': bool, whether constraints are active
+        - 'max_degree': int or None
+        - 'locality_radius': int or None
+        - 'lambda_constraint': float, penalty strength
 
     Returns
     -------
@@ -215,6 +223,13 @@ def train_mixture_recovery(
         # Forward pass and compute loss/gradients
         loss, dW, dv = model.loss_and_grads(X, y, M)
 
+        # Add constraint penalty to loss if enabled
+        if constraint_cfg is not None and constraint_cfg.get("enabled", False):
+            lambda_constraint = constraint_cfg.get("lambda_constraint", 0.0)
+            if lambda_constraint > 0:
+                penalty = constraint_penalty(w, topology_names, constraint_cfg)
+                loss = loss + lambda_constraint * penalty
+
         # Compute dL/dM for mixture gradient
         W_eff = model.W * M
         p = model.forward(X, M)
@@ -226,6 +241,16 @@ def train_mixture_recovery(
 
         # Compute gradient for mixture logits
         dL_dz = mixture.grad_z(dL_dM)
+
+        # Add constraint gradient if enabled
+        if constraint_cfg is not None and constraint_cfg.get("enabled", False):
+            lambda_constraint = constraint_cfg.get("lambda_constraint", 0.0)
+            if lambda_constraint > 0:
+                dL_dw_constraint = constraint_penalty_grad(w, topology_names, constraint_cfg)
+                # Convert dL/dw to dL/dz via softmax Jacobian
+                weighted_sum = np.sum(dL_dw_constraint * w)
+                dL_dz_constraint = w * (dL_dw_constraint - weighted_sum)
+                dL_dz += lambda_constraint * dL_dz_constraint
 
         # Add regularization gradients
         if lambda_sparsity > 0:
