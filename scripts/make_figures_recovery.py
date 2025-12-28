@@ -312,21 +312,37 @@ def make_learned_graph_figure():
     fig.text(0.5, 0.02, weight_text, ha='center', fontsize=9,
              family='monospace', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
 
-    # Determine honest title based on recovery quality
+    # Compute final accuracy for title
+    final_acc = history['acc'][-1]
+
+    # Determine honest title based on recovery quality (L1 error)
     if l1_error < 0.1:
-        main_title = 'fig.suptitle(f"Mixture Identifiability Diagnostic (L1={l1_error:.3f}, acc={acc:.3f})")'
+        regime = "Identifiable Regime"
     elif l1_error < 0.3:
-        main_title = 'fig.suptitle(f"Mixture Identifiability Diagnostic (L1={l1_error:.3f}, acc={acc:.3f})")'
+        regime = "Partial Identifiability"
     else:
-        main_title = 'Learned Topology Differs from Ground Truth'
+        regime = "Confusable Regime"
 
-    fig.suptitle(main_title, fontsize=16, y=0.98)
+    main_title = f"{regime} (L1={l1_error:.3f}, acc={final_acc:.2f})"
 
-    # Add smaller subtitle with metrics
-    fig.text(0.5, 0.93, metrics_box, ha='center', fontsize=9,
-             bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.5))
+    # Layout: reserve space for title at top
+    fig.subplots_adjust(top=0.86)
 
-    fig.tight_layout(rect=[0, 0.12, 1, 0.90])
+    # Place suptitle centered at top
+    fig.suptitle(main_title, fontsize=18, y=0.99)
+
+    # Place metrics box in top-right corner (no overlap with centered title)
+    fig.text(
+        0.985, 0.985,
+        metrics_box,
+        ha='right',
+        va='top',
+        fontsize=10,
+        bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.5)
+    )
+
+    # Adjust bottom for weight text
+    fig.subplots_adjust(bottom=0.18)
     out_path = FIGURES_DIR / "sqnt_learned_graph_overlay.png"
     fig.savefig(out_path, dpi=200, bbox_inches='tight')
     plt.close(fig)

@@ -99,11 +99,16 @@ All gradients are computed analytically in NumPy—no autograd required.
 
 **Right**: Recovery error (L1 distance and KL divergence) decreases over training epochs. Support metrics (precision, recall, F1) quantify whether the correct topologies are identified.
 
-### Figure 2: Recovery Phase Diagram
+### Figure 2: Identifiability Regime Map
 
 ![Recovery Phase Diagram](figures/sqnt_recovery_phase_diagram.png)
 
-Phase diagram showing recovery success as a function of **label noise** (y-axis) and **dataset size** (x-axis). The white contour marks the boundary between recoverable and non-recoverable regimes. Key insight: larger datasets and lower noise enable better topology recovery.
+This figure maps identifiability regimes across data conditions:
+
+- **Left panel (Recovery Error)**: L1 distance between learned and true mixture weights. Lower values (green) indicate better identifiability; higher values (red) indicate topology confusability.
+- **Right panel (Training Accuracy)**: Classification performance. High accuracy is achievable across most conditions.
+
+**Key insight**: High accuracy can coexist with high L1 error due to topology confusability—the model learns *some* effective topology but not necessarily the *true* one. Low L1 combined with high accuracy indicates empirical identifiability under the current observable.
 
 ### Figure 3: Learned Graph Structure
 
