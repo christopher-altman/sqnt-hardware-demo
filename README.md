@@ -140,7 +140,7 @@ Single-topology baseline accuracies reveal *topology confusability*: when multip
 
 An important insight from this demonstration: **high classification accuracy does not guarantee correct mixture recovery**. If two topologies produce similar loss landscapes (high confusability), the optimizer may distribute weight between them arbitrarily while still achieving good behavioral performance. The identifiability controls below help diagnose and mitigate this.
 
-Applying hardware-motivated topology constraints changes recovered mixture weights without improving identifiability in this setting, suggesting that restricting the hypothesis class is not sufficient under the current observable.
+This motivates Phase III: increasing observability (auxiliary measurements) to break topology confusability, rather than relying on hypothesis-space restriction alone.
 
 ---
 
