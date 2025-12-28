@@ -13,11 +13,6 @@ dependencies = [
   "matplotlib>=3.7",
 ]
 
-dependencies = [
-  "numpy",
-  "matplotlib",
-]
-
 [tool.setuptools]
 package-dir = {"" = "src"}
 
