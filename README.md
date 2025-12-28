@@ -38,7 +38,7 @@ Classical neural networks treat connectivity as fixed architecture. In contrast,
 
 - [**Superpositional Quantum Network Topologies** (IJTP 2004)](#ref-sqnt-2004)
 - [**Backpropagation in Adaptive Quantum Networks** (IJTP 2010)](#ref-aqn-2010)
-- **Accelerated Training Convergence in Superposed Quantum Networks** (NATO ASI)
+- **Accelerated Training Convergence in Superposed Quantum Networks** (NATO Advanced Study Institute, 2007)
 
 ---
 
@@ -265,7 +265,7 @@ sqnt-hardware-demo/
 
 ---
 
-## Features
+## Versioned Features 
 
 ### v2.1 (Current)
 - [x] Graph topology masks (chain, ring, star, complete)
@@ -279,12 +279,29 @@ sqnt-hardware-demo/
 - [x] **Learned graph visualization**
 - [x] **Identifiability diagnostics** (support precision/recall/F1)
 - [x] **Topology confusion baselines**
+- [x] **Hardware-aware topology constraints** (max-degree, locality/radius; optional penalty, defaults OFF)
 - [x] MNIST/CIFAR data loaders (numpy-only)
 
 ### v3 (Planned)
-- [ ] Hardware-aware topology constraints
-- [ ] Quantum circuit compilation targets
+- [ ] Compilation-aware constraints (device graph + routing/SWAP overhead)
+- [ ] Quantum circuit compilation targets (gate sets + layout/routing)
 - [ ] Integration with quantum simulation backends
+
+---
+
+## Roadmap
+
+- [x] **Phase I — Constraint operators (hardware-aware hypothesis restriction)**  
+Max-degree + locality/radius constraints as optional penalties (defaults OFF). Establishes whether feasibility constraints alone improve identifiability.
+
+- [ ] **Phase II — Compilation-targeted topology constraints**  
+Map candidate topologies onto device-native connectivity (heavy-hex / grid / LNN), then evaluate identifiability after compilation (routing, SWAP overhead) under realistic connectivity.
+
+- [ ] **Phase III — Multi-observable identifiability protocols**  
+Add at least one auxiliary observable/channel to break topology confusability (accuracy ≠ identifiability) and quantify support recovery improvements.
+
+- [ ] **Phase IV — Adaptive topology learning (AQN / topology backprop)**  
+Reintroduce adaptive learning dynamics as *control* once identifiability limits are characterized, coupling constraints + observables.
 
 ---
 
