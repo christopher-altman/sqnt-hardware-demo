@@ -308,9 +308,8 @@ Reintroduce adaptive learning dynamics as *control* once identifiability limits 
 ## References
 
 <a id="ref-sqnt-2004"></a>
-1. C. Altman, J. Pykacz & R. Zapatrin, "Superpositional Quantum Network Topologies," *International Journal of Theoretical Physics* 43, 2029–2041 (2004).
-   DOI: [10.1023/B:IJTP.0000049008.51567.ec](https://doi.org/10.1023/B:IJTP.0000049008.51567.ec) · arXiv: [q-bio/0311016](https://arxiv.org/abs/q-bio/0311016)
 
+1. C. Altman, J. Pykacz & R. Zapatrin, "Superpositional Quantum Network Topologies," *International Journal of Theoretical Physics* 43, 2029–2041 (2004). DOI: [10.1023/B:IJTP.0000049008.51567.ec](https://doi.org/10.1023/B:IJTP.0000049008.51567.ec) · arXiv: [q-bio/0311016](https://arxiv.org/abs/q-bio/0311016).
 <a id="ref-aqn-2010"></a>
 2. C. Altman & R. Zapatrin, "Backpropagation in Adaptive Quantum Networks," *International Journal of Theoretical Physics* 49, 2991–2997 (2010).
    DOI: [10.1007/s10773-009-0103-1](https://doi.org/10.1007/s10773-009-0103-1) · arXiv: [0903.4416](https://arxiv.org/abs/0903.4416)
