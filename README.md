@@ -31,8 +31,13 @@ Classical neural networks treat connectivity as fixed architecture. In contrast,
 
 ## Lineage
 
-- **Superpositional Quantum Network Topologies** (IJTP 2004)
-- **Backpropagation in Adaptive Quantum Networks** (IJTP 2010)
+**Relation to Prior Work.** This repository builds directly on our earlier formulation of **Superposed Quantum Network Topologies (SQNT)** and learning dynamics on **Adaptive Quantum Networks (AQN)** (Altman, Pykacz & Zapatrin 2004; Altman & Zapatrin 2010). The methodological shift here is deliberate: we treat topology as **latent but fixed** and ask when it is **identifiable from observable behavior** (and when it is not). This enables controlled diagnostics—recovery error, thresholded support recovery, and single-topology baselines—that make **topology confusability** explicit even when predictive accuracy is high. In subsequent extensions, the adaptive/topology-backpropagation framework is reintroduced as a **constructive mechanism**: not merely to fit behavior, but to **break degeneracy** by coupling learning to additional observables, priors, and hardware constraints.
+
+- We separate **inference** (identifiability under fixed structure) from **control** (adaptive topology learning).
+- Adaptive topology learning is treated as a response when static recovery is **ill-posed** under the chosen observable.
+
+- [**Superpositional Quantum Network Topologies** (IJTP 2004)](#ref-sqnt-2004)
+- [**Backpropagation in Adaptive Quantum Networks** (IJTP 2010)](#ref-aqn-2010)
 - **Accelerated Training Convergence in Superposed Quantum Networks** (NATO ASI)
 
 ---
@@ -285,9 +290,11 @@ sqnt-hardware-demo/
 
 ## References
 
+<a id="ref-sqnt-2004"></a>
 1. C. Altman, J. Pykacz & R. Zapatrin, "Superpositional Quantum Network Topologies," *International Journal of Theoretical Physics* 43, 2029–2041 (2004).
    DOI: [10.1023/B:IJTP.0000049008.51567.ec](https://doi.org/10.1023/B:IJTP.0000049008.51567.ec) · arXiv: [q-bio/0311016](https://arxiv.org/abs/q-bio/0311016)
 
+<a id="ref-aqn-2010"></a>
 2. C. Altman & R. Zapatrin, "Backpropagation in Adaptive Quantum Networks," *International Journal of Theoretical Physics* 49, 2991–2997 (2010).
    DOI: [10.1007/s10773-009-0103-1](https://doi.org/10.1007/s10773-009-0103-1) · arXiv: [0903.4416](https://arxiv.org/abs/0903.4416)
 
