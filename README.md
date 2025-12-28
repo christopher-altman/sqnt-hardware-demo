@@ -133,11 +133,14 @@ Single-topology baseline accuracies reveal *topology confusability*: when multip
 - **Mixture identifiability is measurable**: Recovery depends on data quality, noise level, and topology confusability
 - **High accuracy can coexist with poor mixture recovery**: Topologies that are mutually substitutable under the loss function may lead to spurious weight assignments
 - **Support recovery metrics** (precision, recall, F1) provide a more nuanced view than L1 error alone
+- **Constraints shift the solution but don’t solve identifiability (this setting)**: Applying hardware-motivated topology constraints reallocates recovered mixture weights without improving identifiability, indicating that hypothesis-space restriction alone is insufficient under the current observable.
 - **All results are deterministic and reproducible** (seed=0)
 
 ### Identifiability vs. Accuracy
 
 An important insight from this demonstration: **high classification accuracy does not guarantee correct mixture recovery**. If two topologies produce similar loss landscapes (high confusability), the optimizer may distribute weight between them arbitrarily while still achieving good behavioral performance. The identifiability controls below help diagnose and mitigate this.
+
+
 
 ---
 
