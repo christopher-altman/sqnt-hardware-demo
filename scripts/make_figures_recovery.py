@@ -314,9 +314,9 @@ def make_learned_graph_figure():
 
     # Determine honest title based on recovery quality
     if l1_error < 0.1:
-        main_title = 'Learned Topology Closely Matches Ground Truth'
+        main_title = 'fig.suptitle(f"Mixture Identifiability Diagnostic (L1={l1_error:.3f}, acc={acc:.3f})")'
     elif l1_error < 0.3:
-        main_title = 'Learned Topology Approximates Ground Truth'
+        main_title = 'fig.suptitle(f"Mixture Identifiability Diagnostic (L1={l1_error:.3f}, acc={acc:.3f})")'
     else:
         main_title = 'Learned Topology Differs from Ground Truth'
 
