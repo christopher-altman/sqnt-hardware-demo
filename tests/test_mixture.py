@@ -67,7 +67,7 @@ class TestTopologyMixture(unittest.TestCase):
     def test_initialization(self):
         """Test that mixture initializes correctly."""
         self.assertEqual(self.mixture.K, 2)
-        self.assertEqual(self.mixture.n, 4)
+        self.assertEqual(self.mixture.shape, (4, 4))
         self.assertEqual(len(self.mixture.z), 2)
 
     def test_weights_sum_to_one(self):
@@ -381,6 +381,135 @@ class TestTrainRandomMixture(unittest.TestCase):
             X, y, topology_names=["chain", "ring"], n=n, epochs=5, seed=42
         )
         np.testing.assert_array_almost_equal(w1, w2)
+
+
+class TestMixtureRecovery(unittest.TestCase):
+    """Test suite for ground-truth mixture recovery."""
+
+    def test_recovery_error_decreases(self):
+        """Test that recovery error decreases during training."""
+        from sqnt_hardware_demo.experiments import (
+            sample_ground_truth_mixture,
+            generate_planted_mixture_data,
+            train_mixture_recovery,
+        )
+
+        n = 8
+        K = 2
+        topologies = ["chain", "complete"]  # Use more different topologies
+
+        w_true = sample_ground_truth_mixture(K, seed=0, concentration=0.3)
+
+        X, y, _, _ = generate_planted_mixture_data(
+            n=n, batch=256, w_true=w_true,
+            topology_names=topologies, seed=0, noise_level=0.0
+        )
+
+        history = train_mixture_recovery(
+            X, y, w_true,
+            topology_names=topologies,
+            n=n, epochs=100, lr_mixture=0.2, seed=0
+        )
+
+        # Recovery error should decrease over training
+        early_l1 = np.mean(history['recovery_l1'][:10])
+        late_l1 = np.mean(history['recovery_l1'][-10:])
+        self.assertLess(late_l1, early_l1)
+
+    def test_planted_data_generation(self):
+        """Test that planted data generation works correctly."""
+        from sqnt_hardware_demo.experiments import (
+            sample_ground_truth_mixture,
+            generate_planted_mixture_data,
+        )
+
+        n = 8
+        batch = 256
+        K = 3
+        topologies = ["chain", "ring", "star"]
+
+        w_true = sample_ground_truth_mixture(K, seed=42)
+        self.assertAlmostEqual(np.sum(w_true), 1.0, places=10)
+
+        X, y, W_true, v_true = generate_planted_mixture_data(
+            n=n, batch=batch, w_true=w_true,
+            topology_names=topologies, seed=42
+        )
+
+        self.assertEqual(X.shape, (batch, n))
+        self.assertEqual(y.shape, (batch,))
+        self.assertEqual(W_true.shape, (n, n))
+        self.assertEqual(v_true.shape, (n,))
+        self.assertTrue(np.all((y == 0) | (y == 1)))
+
+
+class TestSQNTMLP(unittest.TestCase):
+    """Test suite for multi-layer SQNT network."""
+
+    def test_mlp_forward_shape(self):
+        """Test that MLP forward pass produces correct shape."""
+        from sqnt_hardware_demo.mlp import SQNTMLP
+
+        # Use square layers for simplicity (same input/output dims)
+        layer_sizes = [8, 8, 8, 1]
+        topologies = ["chain", "ring"]
+        batch = 32
+
+        model = SQNTMLP(layer_sizes, topologies, seed=0)
+        X = np.random.randn(batch, 8)
+        p, hiddens = model.forward(X)
+
+        self.assertEqual(p.shape, (batch,))
+        self.assertEqual(len(hiddens), 4)  # input + 3 layers
+        self.assertEqual(hiddens[0].shape, (batch, 8))
+        self.assertEqual(hiddens[1].shape, (batch, 8))
+        self.assertEqual(hiddens[2].shape, (batch, 8))
+        self.assertEqual(hiddens[3].shape, (batch, 1))
+
+    def test_mlp_weights_sum_to_one(self):
+        """Test that per-layer mixture weights sum to 1."""
+        from sqnt_hardware_demo.mlp import SQNTMLP
+
+        # Use square layers
+        layer_sizes = [8, 8, 8]
+        topologies = ["chain", "ring", "star"]
+
+        model = SQNTMLP(layer_sizes, topologies, seed=0)
+        all_weights = model.get_all_weights()
+
+        self.assertEqual(len(all_weights), 2)  # 2 layers
+        for w in all_weights:
+            self.assertAlmostEqual(np.sum(w), 1.0, places=10)
+            self.assertTrue(np.all(w >= 0))
+            self.assertEqual(len(w), 3)
+
+    def test_mlp_training(self):
+        """Test that MLP training runs and returns history."""
+        from sqnt_hardware_demo.mlp import train_mlp_mixture
+
+        n = 8
+        batch = 64
+        rng = np.random.default_rng(0)
+        X = rng.standard_normal((batch, n))
+        y = rng.integers(0, 2, batch).astype(float)
+
+        # Use square layers
+        layer_sizes = [n, n, n, 1]
+        topologies = ["chain", "ring"]
+
+        history, model = train_mlp_mixture(
+            X, y,
+            layer_sizes=layer_sizes,
+            topology_names=topologies,
+            epochs=10,
+            seed=0
+        )
+
+        self.assertIn('loss', history)
+        self.assertIn('acc', history)
+        self.assertIn('weights_per_layer', history)
+        self.assertEqual(len(history['loss']), 10)
+        self.assertEqual(len(history['weights_per_layer']), 3)  # 3 layers
 
 
 if __name__ == '__main__':

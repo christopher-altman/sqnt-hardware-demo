@@ -26,7 +26,7 @@ class TopologyMixture:
     Parameters
     ----------
     masks : List[np.ndarray]
-        List of K topology masks, each of shape (n, n).
+        List of K topology masks, each of shape (n_out, n_in) or (n, n).
     seed : int
         Random seed for logit initialization.
     """
@@ -34,12 +34,12 @@ class TopologyMixture:
     def __init__(self, masks: List[np.ndarray], seed: int = 0):
         self.masks = [m.copy() for m in masks]
         self.K = len(masks)
-        self.n = masks[0].shape[0]
+        self.shape = masks[0].shape  # Can be non-square for MLP layers
 
-        # Validate mask shapes
+        # Validate mask shapes (all must match first)
         for i, m in enumerate(masks):
-            if m.shape != (self.n, self.n):
-                raise ValueError(f"Mask {i} has shape {m.shape}, expected ({self.n}, {self.n})")
+            if m.shape != self.shape:
+                raise ValueError(f"Mask {i} has shape {m.shape}, expected {self.shape}")
 
         # Initialize logits (uniform initialization -> equal weights)
         rng = np.random.default_rng(seed)
@@ -52,7 +52,7 @@ class TopologyMixture:
     def mixture_mask(self) -> np.ndarray:
         """Return effective mask M = sum_k w_k * M_k."""
         w = self.weights()
-        M = np.zeros((self.n, self.n))
+        M = np.zeros(self.shape)
         for k in range(self.K):
             M += w[k] * self.masks[k]
         return M

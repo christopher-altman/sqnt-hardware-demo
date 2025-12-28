@@ -1,6 +1,6 @@
 # Hardware Demonstration of Superpositional Quantum Network Topologies (Adaptive Quantum Networks)
 
-*A minimal, runnable bridge artifact connecting the theory line from “Superpositional Quantum Network Topologies“ and “Backpropagation in Adaptive Quantum Networks” (Int. Journal of Theoretical Physics).*
+*A minimal, runnable bridge artifact connecting the theory line from "Superpositional Quantum Network Topologies" and "Backpropagation in Adaptive Quantum Networks" (Int. Journal of Theoretical Physics).*
 
 <br>
 
@@ -21,6 +21,8 @@ Classical neural networks treat connectivity as fixed architecture. In contrast,
 1. **Topology spatialization**: projecting operator-space weights onto graph structure
 2. **Superposed topologies**: mixing multiple graph masks via learned coefficients
 3. **Gradient-based topology learning**: jointly optimizing network parameters *and* topology mixture weights
+4. **Ground-truth recovery**: measuring how well planted topology mixtures can be identified from data
+5. **Identifiability diagnostics**: quantifying topology confusability and support recovery
 
 ## Terminology
 
@@ -85,33 +87,47 @@ For binary cross-entropy loss $\mathcal{L}$, we derive gradients for joint optim
 
 All gradients are computed analytically in NumPy—no autograd required.
 
-<br>
-
 ---
 
 ## Results
 
-### Figure 1: Performance Comparison
+### Figure 1: Mixture Recovery Convergence
 
-![Learned Mixture Performance](figures/sqnt_learned_mixture_curve.png)
+![Mixture Recovery Convergence](figures/sqnt_mixture_recovery_convergence.png)
 
-Training accuracy over 200 epochs comparing:
-- **Learned mixture** (blue): jointly optimizes topology weights
-- **Best fixed topology** (green dashed): single topology baseline
-- **Random mixture** (red dotted): frozen random weights
+**Left**: Learned mixture weights $\hat{w}_k(t)$ approach ground-truth weights $w^*_k$ (dashed lines) during training. The degree of convergence depends on topology confusability and data quality.
 
-### Figure 2: Learned Mixture Weights
+**Right**: Recovery error (L1 distance and KL divergence) decreases over training epochs. Support metrics (precision, recall, F1) quantify whether the correct topologies are identified.
 
-![Mixture Weight Evolution](figures/sqnt_mixture_weights.png)
+### Figure 2: Recovery Phase Diagram
 
-Evolution of learned topology weights $w_k(t)$ during training, showing how the model discovers which topologies contribute to the task.
+![Recovery Phase Diagram](figures/sqnt_recovery_phase_diagram.png)
+
+Phase diagram showing recovery success as a function of **label noise** (y-axis) and **dataset size** (x-axis). The white contour marks the boundary between recoverable and non-recoverable regimes. Key insight: larger datasets and lower noise enable better topology recovery.
+
+### Figure 3: Learned Graph Structure
+
+![Learned Graph Overlay](figures/sqnt_learned_graph_overlay.png)
+
+Visualization of the learned mixture mask compared to ground truth. Nodes are arranged on a circle; edge opacity reflects mixture weights. The figure title adapts based on actual recovery quality (L1 error), and support metrics are annotated.
+
+### Figure 4: Topology Confusion Baselines
+
+![Topology Confusion Baselines](figures/sqnt_topology_confusion_baselines.png)
+
+Single-topology baseline accuracies reveal *topology confusability*: when multiple topologies achieve similar accuracy, they may be substitutable under the observable, making mixture recovery harder.
 
 ### Key Findings
 
-- The learned mixture achieves competitive accuracy with fixed topologies
-- Mixture weights evolve during training, indicating topology-task alignment
-- The gradient-based approach successfully learns topology superposition
-- All results are deterministic and reproducible (seed=0)
+- **Behavioral learning succeeds**: The model achieves good classification accuracy regardless of topology mixture
+- **Mixture identifiability is measurable**: Recovery depends on data quality, noise level, and topology confusability
+- **High accuracy can coexist with poor mixture recovery**: Topologies that are mutually substitutable under the loss function may lead to spurious weight assignments
+- **Support recovery metrics** (precision, recall, F1) provide a more nuanced view than L1 error alone
+- **All results are deterministic and reproducible** (seed=0)
+
+### Identifiability vs. Accuracy
+
+An important insight from this demonstration: **high classification accuracy does not guarantee correct mixture recovery**. If two topologies produce similar loss landscapes (high confusability), the optimizer may distribute weight between them arbitrarily while still achieving good behavioral performance. The identifiability controls below help diagnose and mitigate this.
 
 ---
 
@@ -133,12 +149,11 @@ source .venv/bin/activate
 # Install package
 pip install -e .
 
-# Run all demonstrations
+# Run all experiments and generate figures
 python scripts/run_all.py
 
-# Or run specific scripts
-python scripts/make_figures.py           # Original alpha-sweep
-python scripts/make_figures_learned.py   # Learned mixture demo
+# Or run specific figure generation
+python scripts/make_figures_recovery.py
 
 # Run tests
 pip install pytest
@@ -161,12 +176,47 @@ All experiments use fixed random seeds for full reproducibility:
 |-----------|-------|
 | Random seed | 0 |
 | Nodes (n) | 12 |
-| Batch size | 512 |
-| Epochs | 200 |
+| Batch size | 1024 |
+| Epochs | 300 |
 | Learning rate (params) | 0.2 |
 | Learning rate (mixture) | 0.15 |
 
 Generated figures are deterministic—running `scripts/run_all.py` produces identical outputs.
+
+---
+
+## Identifiability Controls
+
+The following parameters control sparse priors and identifiability diagnostics in `train_mixture_recovery()`:
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--lambda_dirichlet` | 0.0 | Dirichlet MAP prior strength. Encourages sparse mixtures when > 0. |
+| `--alpha_dirichlet` | 0.3 | Dirichlet concentration. Values < 1 push small weights toward 0. |
+| `--lambda_entropy` | 0.0 | Entropy penalty. Positive values encourage uniform weights; negative encourages concentration. |
+| `--tau_support` | 0.05 | Support threshold for precision/recall/F1 metrics. |
+
+**Example with sparse prior:**
+
+```python
+from sqnt_hardware_demo.experiments import train_mixture_recovery
+
+history = train_mixture_recovery(
+    X, y, w_true,
+    topology_names=["chain", "ring", "star", "complete"],
+    n=12,
+    epochs=300,
+    lambda_dirichlet=0.1,   # Enable sparse Dirichlet prior
+    alpha_dirichlet=0.3,     # Sparse concentration
+)
+```
+
+**Support recovery metrics** are computed with threshold `tau`:
+- **Precision**: Fraction of learned support that is correct
+- **Recall**: Fraction of true support that was found
+- **F1**: Harmonic mean of precision and recall
+
+These metrics are reported in console output and saved to `results/identifiability_metrics.json`.
 
 ---
 
@@ -175,45 +225,53 @@ Generated figures are deterministic—running `scripts/run_all.py` produces iden
 ```
 sqnt-hardware-demo/
 ├── src/sqnt_hardware_demo/
-│   ├── __init__.py          # Package exports
+│   ├── __init__.py           # Package exports
 │   ├── graphs.py             # Topology mask generation
 │   ├── sqnt_layer.py         # SQNT layer implementation
 │   ├── train_demo.py         # Alpha-sweep training
-│   └── mixture.py            # Learned topology mixture
+│   ├── mixture.py            # Learned topology mixture
+│   ├── experiments.py        # Ground-truth recovery experiments
+│   ├── mlp.py                # Multi-layer SQNT network
+│   └── identifiability.py    # Support metrics and diagnostics
 ├── scripts/
-│   ├── make_figures.py       # Original figure generation
-│   ├── make_figures_learned.py  # Learned mixture figures
-│   └── run_all.py            # Full demonstration script
+│   ├── make_figures_recovery.py  # Generate canonical figures
+│   ├── run_all.py               # Full demonstration script
+│   ├── download_mnist.py        # MNIST data loader
+│   └── download_cifar10.py      # CIFAR-10 data loader
 ├── tests/
 │   ├── test_sqnt_hardware_demo.py  # Core tests
-│   └── test_mixture.py       # Mixture module tests
+│   └── test_mixture.py          # Mixture and recovery tests
 ├── figures/
-│   ├── sqnt_mixture_curve.png
-│   ├── sqnt_learned_mixture_curve.png
-│   └── sqnt_mixture_weights.png
+│   ├── sqnt_mixture_recovery_convergence.png
+│   ├── sqnt_recovery_phase_diagram.png
+│   ├── sqnt_learned_graph_overlay.png
+│   └── sqnt_topology_confusion_baselines.png
+├── results/
+│   └── identifiability_metrics.json
 └── docs/
-    └── CLAUDE_UPGRADE_REPORT.md
+    ├── CLAUDE_UPGRADE_REPORT.md
+    └── CLAUDE_IDENTIFIABILITY_UPGRADE_REPORT.md
 ```
 
 ---
 
-## Roadmap
+## Features
 
-### v1 (Current)
+### v2.1 (Current)
 - [x] Graph topology masks (chain, ring, star, complete)
 - [x] Operator-space spatialization
 - [x] Fixed-alpha topology mixing
 - [x] Learned topology mixture with gradient descent
-- [x] Baseline comparisons (fixed, random)
-- [x] Canonical figures for portfolio
+- [x] **Ground-truth mixture recovery experiments**
+- [x] **Multi-layer network with per-layer topologies**
+- [x] **Topology regularization** (sparsity, entropy, Dirichlet MAP)
+- [x] **Phase diagram for identifiability**
+- [x] **Learned graph visualization**
+- [x] **Identifiability diagnostics** (support precision/recall/F1)
+- [x] **Topology confusion baselines**
+- [x] MNIST/CIFAR data loaders (numpy-only)
 
-### v2 (Planned)
-- [ ] Multiple hidden layers with per-layer topology
-- [ ] Larger-scale experiments (MNIST, CIFAR)
-- [ ] Topology regularization (sparsity, smoothness)
-- [ ] Visualization of learned graph structure
-
-### v3 (Future)
+### v3 (Planned)
 - [ ] Hardware-aware topology constraints
 - [ ] Quantum circuit compilation targets
 - [ ] Integration with quantum simulation backends
@@ -240,7 +298,7 @@ If you use or build on this work, please cite:
   author  = {Christopher Altman},
   title   = {sqnt-hardware-demo: SQNT Hardware Demonstration – Adaptive Quantum Networks},
   year    = {2025},
-  version = {0.1.0},
+  version = {0.2.1},
   url     = {https://github.com/christopher-altman/sqnt-hardware-demo},
 }
 ```

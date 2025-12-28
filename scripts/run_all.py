@@ -3,207 +3,158 @@
 Run all SQNT demonstration scripts and generate figures.
 
 This script:
-1. Runs the original alpha-sweep figure generation
-2. Runs the learned mixture demonstration
+1. Runs the ground-truth mixture recovery experiments
+2. Generates all canonical figures
 3. Prints a summary of results
 
-All outputs are deterministic and reproducible.
+All outputs are deterministic and reproducible (seed=0).
 """
 
 import sys
 from pathlib import Path
 
-# Ensure we can import from scripts directory
-SCRIPTS_DIR = Path(__file__).parent
+# Ensure package and scripts are importable
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent))
 
 
-def run_original_figure():
-    """Run the original make_figures.py script."""
+def run_recovery_experiments():
+    """Run the mixture recovery experiments and generate figures."""
     print("\n" + "=" * 60)
-    print("PART 1: Original Alpha-Sweep Figure")
+    print("SQNT Ground-Truth Mixture Recovery")
     print("=" * 60)
 
-    from sqnt_hardware_demo.train_demo import sweep_alphas
     import numpy as np
-    import matplotlib.pyplot as plt
-
-    alphas = np.linspace(0.0, 1.0, 11)
-    accs = sweep_alphas(alphas, n=12, seed=0, topo0="chain", topo1="complete")
-
-    plt.figure(figsize=(6.5, 4.0))
-    plt.plot(alphas, accs, marker="o")
-    plt.xlabel("Topology mixture parameter alpha  (chain -> complete)")
-    plt.ylabel("Training-set accuracy")
-    plt.title("SQNT demo: accuracy vs superposed topology")
-    plt.ylim(0.0, 1.02)
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-
-    figures_dir = Path(__file__).parent.parent / "figures"
-    figures_dir.mkdir(exist_ok=True)
-    out = figures_dir / "sqnt_mixture_curve.png"
-    plt.savefig(out, dpi=200)
-    plt.close()
-    print(f"Wrote {out}")
-
-    print("\nAlpha-sweep results:")
-    for a, acc in zip(alphas, accs):
-        print(f"  alpha={a:.1f}: acc={acc:.4f}")
-
-
-def run_learned_mixture():
-    """Run the learned mixture demonstration."""
-    print("\n" + "=" * 60)
-    print("PART 2: Learned Mixture Demonstration")
-    print("=" * 60)
-
-    # Import and run the learned mixture script
-    import numpy as np
-    import matplotlib.pyplot as plt
-    from sqnt_hardware_demo.train_demo import make_synthetic
-    from sqnt_hardware_demo.mixture import (
-        train_learned_mixture,
-        train_fixed_topology,
-        train_random_mixture,
+    from sqnt_hardware_demo.experiments import (
+        sample_ground_truth_mixture,
+        generate_planted_mixture_data,
+        train_mixture_recovery,
     )
 
     # Configuration
     SEED = 0
     N_NODES = 12
-    BATCH_SIZE = 512
-    EPOCHS = 200
-    LR_PARAMS = 0.2
-    LR_MIXTURE = 0.15
+    BATCH_SIZE = 1024
+    EPOCHS = 300
     TOPOLOGIES = ["chain", "ring", "star", "complete"]
 
-    figures_dir = Path(__file__).parent.parent / "figures"
-    figures_dir.mkdir(exist_ok=True)
-
-    print(f"\nConfiguration: n={N_NODES}, epochs={EPOCHS}, seed={SEED}")
+    print(f"\nConfiguration: n={N_NODES}, batch={BATCH_SIZE}, epochs={EPOCHS}")
     print(f"Topologies: {TOPOLOGIES}\n")
 
-    # Generate data
-    X, y = make_synthetic(n=N_NODES, batch=BATCH_SIZE, seed=SEED)
+    # Sample ground truth
+    K = len(TOPOLOGIES)
+    w_true = sample_ground_truth_mixture(K, seed=SEED, concentration=0.3)
+    print("Ground-truth mixture weights:")
+    for k, topo in enumerate(TOPOLOGIES):
+        print(f"  {topo:10}: {w_true[k]:.4f}")
 
-    # Train learned mixture
-    print("Training learned mixture...")
-    learned_acc, learned_hist = train_learned_mixture(
-        X, y,
+    # Generate data
+    print("\nGenerating planted mixture data...")
+    X, y, _, _ = generate_planted_mixture_data(
+        n=N_NODES,
+        batch=BATCH_SIZE,
+        w_true=w_true,
+        topology_names=TOPOLOGIES,
+        seed=SEED,
+        noise_level=0.05,
+    )
+    print(f"  Data shape: X={X.shape}, y={y.shape}")
+    print(f"  Label balance: {y.mean():.2%} positive")
+
+    # Train to recover
+    print("\nTraining to recover mixture...")
+    history = train_mixture_recovery(
+        X, y, w_true,
         topology_names=TOPOLOGIES,
         n=N_NODES,
         epochs=EPOCHS,
-        lr_params=LR_PARAMS,
-        lr_mixture=LR_MIXTURE,
+        lr_params=0.2,
+        lr_mixture=0.15,
         seed=SEED,
     )
 
-    # Train baselines
-    print("Training fixed topology baselines...")
-    fixed_results = {}
-    for topo in TOPOLOGIES:
-        acc, hist = train_fixed_topology(
-            X, y, topology_name=topo, n=N_NODES, epochs=EPOCHS, lr=LR_PARAMS, seed=SEED
-        )
-        fixed_results[topo] = (acc, hist)
+    # Results
+    final_weights = history['weights'][-1]
+    final_l1 = history['recovery_l1'][-1]
+    final_acc = history['acc'][-1]
 
-    best_fixed_name = max(fixed_results, key=lambda k: fixed_results[k][0])
-    best_fixed_acc, best_fixed_hist = fixed_results[best_fixed_name]
+    print("\n" + "-" * 40)
+    print("RECOVERY RESULTS")
+    print("-" * 40)
+    print("\nLearned mixture weights:")
+    for k, topo in enumerate(TOPOLOGIES):
+        diff = final_weights[k] - w_true[k]
+        print(f"  {topo:10}: {final_weights[k]:.4f} (true: {w_true[k]:.4f}, diff: {diff:+.4f})")
 
-    # Train random mixture
-    print("Training random mixture control...")
-    random_acc, random_hist, frozen_weights = train_random_mixture(
-        X, y, topology_names=TOPOLOGIES, n=N_NODES, epochs=EPOCHS, lr=LR_PARAMS, seed=SEED
-    )
-
-    # Generate figures
-    print("\nGenerating figures...")
-    epochs_x = np.arange(1, EPOCHS + 1)
-
-    # Figure 1: Performance comparison
-    fig1, ax1 = plt.subplots(figsize=(8, 5))
-    ax1.plot(epochs_x, learned_hist['acc'], 'b-', linewidth=2,
-             label=f'Learned Mixture ({learned_acc:.3f})')
-    ax1.plot(epochs_x, best_fixed_hist['acc'], 'g--', linewidth=1.5,
-             label=f'Best Fixed ({best_fixed_name}, {best_fixed_acc:.3f})')
-    ax1.plot(epochs_x, random_hist['acc'], 'r:', linewidth=1.5,
-             label=f'Random Mixture ({random_acc:.3f})')
-    ax1.set_xlabel('Training Epoch', fontsize=12)
-    ax1.set_ylabel('Training Accuracy', fontsize=12)
-    ax1.set_title('SQNT: Learned vs Fixed Topology Performance', fontsize=14)
-    ax1.set_ylim(0.4, 1.02)
-    ax1.set_xlim(1, EPOCHS)
-    ax1.legend(loc='lower right', fontsize=10)
-    ax1.grid(True, alpha=0.3)
-    fig1.tight_layout()
-    out1 = figures_dir / "sqnt_learned_mixture_curve.png"
-    fig1.savefig(out1, dpi=200)
-    plt.close(fig1)
-    print(f"  Wrote {out1}")
-
-    # Figure 2: Mixture weights
-    fig2, ax2 = plt.subplots(figsize=(8, 5))
-    weights_array = np.array(learned_hist['weights'])
-    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
-    ax2.stackplot(epochs_x, weights_array.T, labels=TOPOLOGIES, colors=colors, alpha=0.7)
-    ax2.set_xlabel('Training Epoch', fontsize=12)
-    ax2.set_ylabel('Mixture Weight', fontsize=12)
-    ax2.set_title('SQNT: Learned Topology Mixture Weights Over Training', fontsize=14)
-    ax2.set_ylim(0, 1)
-    ax2.set_xlim(1, EPOCHS)
-    ax2.legend(loc='center right', fontsize=10)
-    ax2.grid(True, alpha=0.3, axis='y')
-    fig2.tight_layout()
-    out2 = figures_dir / "sqnt_mixture_weights.png"
-    fig2.savefig(out2, dpi=200)
-    plt.close(fig2)
-    print(f"  Wrote {out2}")
-
-    # Print summary
-    final_weights = learned_hist['weights'][-1]
-
-    print("\n" + "=" * 60)
-    print("RESULTS SUMMARY")
-    print("=" * 60)
-    print(f"\nFinal Accuracies:")
-    print(f"  Learned mixture:      {learned_acc:.4f}")
-    print(f"  Best fixed ({best_fixed_name:8}): {best_fixed_acc:.4f}")
-    print(f"  Random mixture:       {random_acc:.4f}")
-    print(f"\nFixed topology breakdown:")
-    for topo in TOPOLOGIES:
-        print(f"  {topo:10}: {fixed_results[topo][0]:.4f}")
-    print(f"\nFinal learned mixture weights:")
-    for i, topo in enumerate(TOPOLOGIES):
-        print(f"  {topo:10}: {final_weights[i]:.4f}")
-    print(f"\nFrozen random weights:")
-    for i, topo in enumerate(TOPOLOGIES):
-        print(f"  {topo:10}: {frozen_weights[i]:.4f}")
+    print(f"\nFinal metrics:")
+    print(f"  L1 recovery error: {final_l1:.4f}")
+    print(f"  Training accuracy: {final_acc:.4f}")
 
     return {
-        'learned_acc': learned_acc,
-        'best_fixed_acc': best_fixed_acc,
-        'best_fixed_name': best_fixed_name,
-        'random_acc': random_acc,
-        'final_weights': final_weights,
+        'w_true': w_true,
+        'w_learned': final_weights,
+        'recovery_l1': final_l1,
+        'accuracy': final_acc,
+        'history': history,
     }
+
+
+def run_figure_generation():
+    """Generate all canonical figures."""
+    print("\n" + "=" * 60)
+    print("Generating Canonical Figures")
+    print("=" * 60)
+
+    # Import and run the figure script
+    from make_figures_recovery import (
+        make_recovery_convergence_figure,
+        make_phase_diagram_figure,
+        make_learned_graph_figure,
+        make_topology_confusion_baselines_figure,
+        FIGURES_DIR,
+        RESULTS_DIR,
+    )
+
+    FIGURES_DIR.mkdir(exist_ok=True)
+    RESULTS_DIR.mkdir(exist_ok=True)
+
+    print()
+    make_recovery_convergence_figure()
+    print()
+    make_phase_diagram_figure()
+    print()
+    make_learned_graph_figure()
+    print()
+    make_topology_confusion_baselines_figure()
 
 
 def main():
     print("=" * 60)
     print("SQNT Hardware Demo - Full Run")
     print("=" * 60)
-    print("\nThis script generates all figures and prints results.")
+    print("\nThis script runs all experiments and generates figures.")
     print("All outputs are deterministic (seed=0).")
 
-    run_original_figure()
-    results = run_learned_mixture()
+    # Run experiments
+    results = run_recovery_experiments()
 
+    # Generate figures
+    run_figure_generation()
+
+    # Summary
     print("\n" + "=" * 60)
     print("ALL DONE")
     print("=" * 60)
+
     print("\nGenerated figures:")
-    print("  figures/sqnt_mixture_curve.png")
-    print("  figures/sqnt_learned_mixture_curve.png")
-    print("  figures/sqnt_mixture_weights.png")
+    print("  figures/sqnt_mixture_recovery_convergence.png")
+    print("  figures/sqnt_recovery_phase_diagram.png")
+    print("  figures/sqnt_learned_graph_overlay.png")
+    print("  figures/sqnt_topology_confusion_baselines.png")
+
+    print("\nKey result: Behavioral learning succeeds; mixture identifiability is measurable.")
+    print(f"  Final L1 error: {results['recovery_l1']:.4f}")
+
     print("\nTo reproduce:")
     print("  pip install -e .")
     print("  python scripts/run_all.py")
