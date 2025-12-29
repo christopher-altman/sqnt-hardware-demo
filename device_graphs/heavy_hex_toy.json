@@ -1,0 +1,10 @@
+{
+  "name": "heavy_hex_toy",
+  "nodes": [0, 1, 2, 3, 4, 5],
+  "edges": [[0, 1], [1, 2], [1, 3], [3, 4], [4, 5]],
+  "metadata": {
+    "connectivity": "heavy-hex",
+    "native_gate_set": "cx,rz",
+    "description": "Toy heavy-hex fragment (6 qubits, simplified IBM-style)"
+  }
+}

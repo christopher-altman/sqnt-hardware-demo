@@ -137,6 +137,17 @@ def train_mixture_recovery(
     lambda_entropy: float = 0.0,
     lambda_dirichlet: float = 0.0,
     alpha_dirichlet: float = 0.3,
+    enable_compile_constraints: bool = False,
+    device_graph: Optional[dict] = None,
+    lambda_compile: float = 0.0,
+    enable_multi_observable: bool = False,
+    lambda_aux: float = 0.0,
+    aux_task: str = "graph_feature",
+    aux_seed: int = 0,
+    enable_adaptive_topology: bool = False,
+    adaptive_beta: float = 0.0,
+    adaptive_momentum: float = 0.0,
+    adaptive_update: str = "momentum",
 ) -> Dict:
     """
     Train to recover a planted mixture and track convergence.
@@ -176,6 +187,32 @@ def train_mixture_recovery(
     alpha_dirichlet : float
         Dirichlet concentration parameter. Values < 1 encourage sparsity.
         Default 0.3 is a reasonable sparse prior.
+    enable_compile_constraints : bool
+        If True and device_graph is provided, include compilation penalty.
+    device_graph : dict, optional
+        Device graph dictionary for compilation-aware constraints.
+    lambda_compile : float
+        Compilation penalty strength. Only used if enable_compile_constraints
+        is True and device_graph is provided.
+    enable_multi_observable : bool
+        If True and lambda_aux > 0, enables multi-observable training.
+        Default False (Phase IV opt-in).
+    lambda_aux : float
+        Auxiliary loss weight. Only used if enable_multi_observable is True.
+        Default 0.0.
+    aux_task : str
+        Auxiliary task type. Default "graph_feature".
+    aux_seed : int
+        Random seed for auxiliary label generation. Default 0.
+    enable_adaptive_topology : bool
+        If True and adaptive_beta > 0, enables adaptive topology dynamics.
+        Default False (Phase V opt-in).
+    adaptive_beta : float
+        Inertia/EMA parameter for adaptive updates. 0 disables. Default 0.0.
+    adaptive_momentum : float
+        Momentum parameter. Default 0.0.
+    adaptive_update : str
+        Update rule: "momentum" or "ema". Default "momentum".
 
     Returns
     -------
@@ -187,7 +224,43 @@ def train_mixture_recovery(
         - 'weights_true': (K,) ground-truth weights
         - 'recovery_l1': (epochs,) L1 distance to true weights
         - 'recovery_kl': (epochs,) KL divergence from true weights
+        - 'loss_compile': (epochs,) compilation penalty (if enabled)
+        - 'loss_aux': (epochs,) auxiliary loss (if multi-observable enabled)
+        - 'acc_aux': (epochs,) auxiliary metric (if multi-observable enabled)
+        - 'z_logits': logit snapshots (if adaptive enabled)
+        - 'adaptive_step_norm': adaptive update norms (if adaptive enabled)
     """
+    # Dispatch to adaptive trainer if either Phase IV or Phase V is enabled
+    if enable_multi_observable or enable_adaptive_topology:
+        from .adaptive_topology import train_adaptive_topology
+        return train_adaptive_topology(
+            X=X,
+            y=y,
+            w_true=w_true,
+            topology_names=topology_names,
+            n=n,
+            epochs=epochs,
+            lr_params=lr_params,
+            lr_mixture=lr_mixture,
+            seed=seed,
+            include_self=include_self,
+            normalize=normalize,
+            lambda_sparsity=lambda_sparsity,
+            lambda_entropy=lambda_entropy,
+            lambda_dirichlet=lambda_dirichlet,
+            alpha_dirichlet=alpha_dirichlet,
+            enable_compile_constraints=enable_compile_constraints,
+            device_graph=device_graph,
+            lambda_compile=lambda_compile,
+            enable_adaptive_topology=enable_adaptive_topology,
+            adaptive_beta=adaptive_beta,
+            adaptive_momentum=adaptive_momentum,
+            adaptive_update=adaptive_update,
+            enable_multi_observable=enable_multi_observable,
+            lambda_aux=lambda_aux,
+            aux_task=aux_task,
+            aux_seed=aux_seed,
+        )
     # Build topology masks
     masks = [make_graph_mask(name, n, include_self=include_self, normalize=normalize)
              for name in topology_names]
@@ -196,6 +269,13 @@ def train_mixture_recovery(
     # Initialize model and mixture
     model = SQNTLayer(n=n, seed=seed)
     mixture = TopologyMixture(masks, seed=seed)
+
+    # Check if compilation constraints are enabled
+    use_compile = (
+        enable_compile_constraints
+        and device_graph is not None
+        and lambda_compile > 0
+    )
 
     # History tracking
     history = {
@@ -206,6 +286,8 @@ def train_mixture_recovery(
         'recovery_l1': [],
         'recovery_kl': [],
     }
+    if use_compile:
+        history['loss_compile'] = []
 
     for epoch in range(epochs):
         # Get current mixture mask
@@ -258,6 +340,16 @@ def train_mixture_recovery(
             dL_dz_dirichlet = w * (dL_dw_dirichlet - weighted_sum)
             dL_dz += dL_dz_dirichlet
 
+        # Compilation penalty (Phase III)
+        compile_loss = 0.0
+        if use_compile:
+            from .compilation import compilation_penalty, compilation_penalty_grad_logits
+            compile_loss = compilation_penalty(w, masks, device_graph, lambda_compile)
+            dL_dz_compile = compilation_penalty_grad_logits(
+                w, masks, device_graph, lambda_compile
+            )
+            dL_dz += dL_dz_compile
+
         # Update parameters
         model.step(dW, dv, lr=lr_params)
         mixture.step(dL_dz, lr=lr_mixture)
@@ -276,6 +368,8 @@ def train_mixture_recovery(
         history['weights'].append(w.copy())
         history['recovery_l1'].append(l1_dist)
         history['recovery_kl'].append(kl_div)
+        if use_compile:
+            history['loss_compile'].append(float(compile_loss))
 
     # Convert to arrays
     history['weights'] = np.array(history['weights'])
@@ -283,6 +377,8 @@ def train_mixture_recovery(
     history['acc'] = np.array(history['acc'])
     history['recovery_l1'] = np.array(history['recovery_l1'])
     history['recovery_kl'] = np.array(history['recovery_kl'])
+    if use_compile:
+        history['loss_compile'] = np.array(history['loss_compile'])
 
     return history
 
