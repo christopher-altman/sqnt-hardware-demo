@@ -1,0 +1,34 @@
+{
+  "name": "minimal-pauli-depolarizing",
+  "version": "1.0",
+  "notes": "Minimal noise template. Use for Phase III simulation backend integration tests; not calibrated to hardware.",
+  "channels": {
+    "1q": {
+      "depolarizing_p": 0.001,
+      "dephasing_p": 0.002
+    },
+    "2q": {
+      "depolarizing_p": 0.01,
+      "dephasing_p": 0.005
+    }
+  },
+  "readout": {
+    "p_flip_0_to_1": 0.02,
+    "p_flip_1_to_0": 0.03
+  },
+  "scope": {
+    "applies_to_gates": {
+      "1q": [
+        "x",
+        "y",
+        "z",
+        "sx",
+        "rz"
+      ],
+      "2q": [
+        "cx"
+      ]
+    },
+    "applies_to_qubits": "all"
+  }
+}

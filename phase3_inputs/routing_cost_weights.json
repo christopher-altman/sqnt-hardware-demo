@@ -1,0 +1,12 @@
+{
+  "name": "routing_cost_weights_default",
+  "version": "1.0",
+  "notes": "Weights used when scoring compiled topologies vs device graphs.",
+  "weights": {
+    "swap_count": 1.0,
+    "swap_depth": 0.5,
+    "two_qubit_gate_count": 0.2,
+    "two_qubit_gate_depth": 0.3,
+    "disconnect_penalty": 1000.0
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "amplitude-damping-plus-dephasing",
+  "version": "1.0",
+  "notes": "Template with T1/T2-style parameters expressed as probabilities per gate. For simple simulators; convert as needed.",
+  "channels": {
+    "1q": {
+      "amplitude_damping_p": 0.0015,
+      "dephasing_p": 0.002
+    },
+    "2q": {
+      "amplitude_damping_p": 0.006,
+      "dephasing_p": 0.005
+    }
+  },
+  "readout": {
+    "p_flip_0_to_1": 0.02,
+    "p_flip_1_to_0": 0.03
+  }
+}

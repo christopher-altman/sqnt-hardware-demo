@@ -1,0 +1,7 @@
+{
+  "type": "dephasing",
+  "parameters": {
+    "p_error": 0.002
+  },
+  "description": "Dephasing noise with 0.2% error rate per gate"
+}

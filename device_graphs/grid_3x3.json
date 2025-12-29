@@ -1,0 +1,68 @@
+{
+  "name": "grid-3x3-9q",
+  "family": "grid",
+  "version": "1.0",
+  "notes": "3x3 nearest-neighbor grid connectivity.",
+  "n_qubits": 9,
+  "directed": false,
+  "edges": [
+    [
+      0,
+      3
+    ],
+    [
+      0,
+      1
+    ],
+    [
+      1,
+      4
+    ],
+    [
+      1,
+      2
+    ],
+    [
+      2,
+      5
+    ],
+    [
+      3,
+      6
+    ],
+    [
+      3,
+      4
+    ],
+    [
+      4,
+      7
+    ],
+    [
+      4,
+      5
+    ],
+    [
+      5,
+      8
+    ],
+    [
+      6,
+      7
+    ],
+    [
+      7,
+      8
+    ]
+  ],
+  "native_two_qubit_gates": [
+    "cx"
+  ],
+  "native_one_qubit_gates": [
+    "x",
+    "y",
+    "z",
+    "sx",
+    "rz"
+  ]
+}

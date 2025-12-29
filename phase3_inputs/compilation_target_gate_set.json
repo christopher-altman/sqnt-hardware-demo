@@ -1,0 +1,17 @@
+{
+  "name": "cx_rz_sx_target",
+  "version": "1.0",
+  "notes": "Common superconducting compilation target (CX + {RZ,SX}).",
+  "one_qubit_gates": [
+    "rz",
+    "sx",
+    "x"
+  ],
+  "two_qubit_gates": [
+    "cx"
+  ],
+  "constraints": {
+    "allow_virtual_rz": true,
+    "max_two_qubit_depth_hint": null
+  }
+}
