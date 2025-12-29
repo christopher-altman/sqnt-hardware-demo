@@ -6,5 +6,5 @@ authors:
   - family-names: "Altman"
     given-names: "Christopher"
 year: 2025
-version: 0.1.0
+version: 0.3.1
 url: "https://github.com/christopher-altman/sqnt-hardware-demo"

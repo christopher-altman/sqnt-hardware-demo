@@ -557,7 +557,7 @@ If you use or build on this work, please cite:
   author  = {Christopher Altman},
   title   = {sqnt-hardware-demo: SQNT Hardware Demonstration – Adaptive Quantum Networks},
   year    = {2025},
-  version = {0.2.1},
+  version = {0.3.1},
   url     = {https://github.com/christopher-altman/sqnt-hardware-demo},
 }
 ```
