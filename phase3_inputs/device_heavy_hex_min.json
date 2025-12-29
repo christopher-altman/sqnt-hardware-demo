@@ -1,0 +1,61 @@
+{
+  "name": "toy-heavy-hex-7q",
+  "family": "heavy-hex",
+  "version": "1.0",
+  "notes": "Toy heavy-hex-like connectivity for compilation/constraint tests. Not an exact IBM device map; intended as minimal concrete input.",
+  "n_qubits": 7,
+  "directed": false,
+  "edges": [
+    [
+      0,
+      1
+    ],
+    [
+      1,
+      2
+    ],
+    [
+      2,
+      3
+    ],
+    [
+      3,
+      4
+    ],
+    [
+      4,
+      5
+    ],
+    [
+      5,
+      6
+    ],
+    [
+      1,
+      4
+    ],
+    [
+      2,
+      5
+    ]
+  ],
+  "native_two_qubit_gates": [
+    "cx"
+  ],
+  "native_one_qubit_gates": [
+    "x",
+    "y",
+    "z",
+    "sx",
+    "rz"
+  ],
+  "coupling_strength_hint": "unit",
+  "timing_hint": {
+    "cx": 300,
+    "sx": 35,
+    "rz": 0
+  },
+  "units": {
+    "timing_hint": "ns"
+  }
+}

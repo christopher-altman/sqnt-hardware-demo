@@ -1,0 +1,48 @@
+{
+  "name": "lnn-8q",
+  "family": "lnn",
+  "version": "1.0",
+  "notes": "Linear nearest-neighbor chain of 8 qubits.",
+  "n_qubits": 8,
+  "directed": false,
+  "edges": [
+    [
+      0,
+      1
+    ],
+    [
+      1,
+      2
+    ],
+    [
+      2,
+      3
+    ],
+    [
+      3,
+      4
+    ],
+    [
+      4,
+      5
+    ],
+    [
+      5,
+      6
+    ],
+    [
+      6,
+      7
+    ]
+  ],
+  "native_two_qubit_gates": [
+    "cx"
+  ],
+  "native_one_qubit_gates": [
+    "x",
+    "y",
+    "z",
+    "sx",
+    "rz"
+  ]
+}

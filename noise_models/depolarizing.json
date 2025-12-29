@@ -1,0 +1,7 @@
+{
+  "type": "depolarizing",
+  "parameters": {
+    "p_error": 0.001
+  },
+  "description": "Depolarizing noise with 0.1% error rate per gate"
+}
