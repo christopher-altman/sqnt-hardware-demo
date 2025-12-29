@@ -395,7 +395,7 @@ Phase IV breaks topology confusability by introducing at least one **auxiliary o
 2. **Auxiliary task:** Predict a graph feature proxy derived from the true mixture mask.
    - Example: triangle count proxy (trace of $A^3$ where $A$ is the symmetrized mixture mask).
    - This feature differs strongly across topologies (e.g., complete > ring > chain).
-3. **Joint loss:** $\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{main}} + \lambda_{\text{aux}} \cdot \mathcal{L}_{\text{aux}}$
+3. **Joint loss:** $`\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{main}} + \lambda_{\text{aux}} \cdot \mathcal{L}_{\text{aux}}`$
 4. **Gradient flow:** Backprop through mixture logits couples both tasks, improving support recovery.
 
 ### CLI Usage
