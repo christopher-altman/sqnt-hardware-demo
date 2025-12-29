@@ -543,7 +543,7 @@ This combines:
 <a id="ref-aqn-2010"></a>
 2. C. Altman & R. Zapatrin, “Backpropagation in Adaptive Quantum Networks,” *International Journal of Theoretical Physics* 49, 2991–2997 (2010). DOI: [10.1007/s10773-009-0103-1](https://doi.org/10.1007/s10773-009-0103-1) · arXiv: [0903.4416](https://arxiv.org/abs/0903.4416).
 <a id="ref-nato-2007"></a>
-3. C. Altman, E. Knorring & R. Zapatrin, “Accelerated Training Convergence in Superposed Quantum Networks,” NATO Advanced Study Institute (2007). [Drive](https://drive.google.com/drive/u/0/mobile/search?q=nato&sort=7&direction=d).
+3. C. Altman, E. Knorring & R. Zapatrin, “Accelerated Training Convergence in Superposed Quantum Networks,” NATO Advanced Study Institute (2007). [NATO ASI](https://drive.google.com/drive/u/0/mobile/search?q=nato&sort=7&direction=d).
 
 ---
 
