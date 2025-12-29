@@ -129,7 +129,8 @@ Single-topology baseline accuracies reveal *topology confusability*: when multip
 
 ### Key Findings
 
-- **Behavioral learning succeeds**: The model achieves good classification accuracy regardless of topology mixture
+- **Behavioral learning succeeds**: The model achieves good classification accuracy across topology settings; learned mixture weights converge to near-uniform (chain 0.26, ring 0.26, star 0.29, complete 0.20)
+- **Topology dominance appears in this regime**: The complete-graph topology remains best (0.8652), while learned mixture (0.8125) ≈ random mixture (0.8145). The learned weights converge toward near-uniform values, suggesting the task is topology-dominated rather than mixture-benefiting under this data regime.
 - **Mixture identifiability is measurable**: Recovery depends on data quality, noise level, and topology confusability
 - **High accuracy can coexist with poor mixture recovery**: Topologies that are mutually substitutable under the loss function may lead to spurious weight assignments
 - **Support recovery metrics** (precision, recall, F1) provide a more nuanced view than L1 error alone
